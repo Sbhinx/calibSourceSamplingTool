@@ -1,1 +1,3 @@
-# calibSourceSamplingTool
+# 关于
+
+该项目可用于Robosense激光雷达和摄像头同时采集点云帧数据(.pcd)和图像数据(.jpg)。以便将其用以联合标定。
