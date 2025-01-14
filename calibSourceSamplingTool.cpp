@@ -213,8 +213,13 @@ public:
             //类似于 指针操作
             shareframe = std::make_shared<cv::Mat>(frame);
 
+            cv::Mat shrink;
+            cv::Size dsize = cv::Size(int(width/4), int(height/4));
+            shrink.create(dsize, frame.type());  
+            cv::resize(frame, shrink, dsize, 0, 0, cv::INTER_AREA);
+
             // 显示图像
-            cv::imshow("Camera", frame);
+            cv::imshow("Camera", shrink);
 
             // 按下 'q' 键退出
             if (cv::waitKey(1) == 'q') {
@@ -303,7 +308,9 @@ int main(int argc, char* argv[]){
 
     //实例化LidarService、cam
     LidarService rslidar;
-    CameraService cam1(1, 1366, 768);
+
+    //(可修改)实例化相机(相机id， 相机分辨率(宽)， 相机分辨率(高))
+    CameraService cam1(0, 4096, 2460);
 
 
     RS_TITLE << "------------------------------------------------------" << RS_REND;
@@ -341,7 +348,7 @@ int main(int argc, char* argv[]){
 
     
 
-    
+    //（可修改)采集次数
     for (int i = 0; i < 20; i++) {
 
         //10s倒计时用以调整
