@@ -55,40 +55,82 @@ public:
         }
     }
 
-    void savePCD(std::shared_ptr<PointCloudMsg> rawPcd)
-    {
-        //增加一个使用PCL库编码msg的函数
-
+    void savePCD(std::shared_ptr<PointCloudMsg> rawPcd) {
         if (!rawPcd) {
             throw std::invalid_argument("rawPCD为空帧！");
         }
 
         // 创建 PCL 点云对象
-        pcl::PointCloud<pcl::PointXYZ>::Ptr pclCloud(new pcl::PointCloud<pcl::PointXYZ>());
+        pcl::PointCloud<pcl::PointXYZI>::Ptr pclCloud(new pcl::PointCloud<pcl::PointXYZI>());
         pclCloud->width = rawPcd->width;
         pclCloud->height = rawPcd->height;
         pclCloud->is_dense = rawPcd->is_dense;
-        pclCloud->points.resize(rawPcd->points.size() / 3);
+        pclCloud->points.resize(rawPcd->points.size());
 
-        // 将 PointCloudMsg 数据拷贝到 PCL 点云
-        for (size_t i = 0; i < pclCloud->points.size(); ++i) {
-            pclCloud->points[i].x = rawPcd->points[i].x;
-            pclCloud->points[i].y = rawPcd->points[i].y;
-            pclCloud->points[i].z = rawPcd->points[i].z;
+        // 填充点云数据
+        for (size_t i = 0; i < rawPcd->points.size(); ++i) {
+            pcl::PointXYZI p;
+            p.x = rawPcd->points[i].x;
+            p.y = rawPcd->points[i].y;
+            p.z = rawPcd->points[i].z;
+            p.intensity = rawPcd->points[i].intensity; // 保留强度信息
+            pclCloud->points[i] = p;
         }
 
         // 获取保存路径和文件名
-        std::string pcdFolder = getPCDFolderPath();
-        std::string filePath = pcdFolder+ "\\" + getNextPCDFileName() + ".pcd";
+        std::string pcdFolder = getPCDFolderPath(); // 假设实现了这个函数
+        if (pcdFolder.empty()) {
+            throw std::runtime_error("PCD文件夹路径无效！");
+        }
+        std::string filePath = pcdFolder + "\\" + getNextPCDFileName() + ".pcd";
 
         // 保存点云到 PCD 文件
         if (pcl::io::savePCDFileBinary(filePath, *pclCloud) < 0) {
-            throw std::runtime_error("保存pcd文件失败!");
+            throw std::runtime_error("保存PCD文件失败!");
         }
 
         std::cout << "PCD file 保存至: " << filePath << std::endl;
     }
+
     
+    // 将msg中的点云信息以时间戳命名并保存为PCD
+/*
+void savePointCloudToPCD(const std::shared_ptr<PointCloudMsg>& msg)
+{
+
+    // 获取当前可执行文件的路径
+    std::string exePath = getExecutablePath();
+    std::string directory = exePath + "\\saved_pcd";
+
+    std::string timestamp = getCurrentTimestamp();
+    std::stringstream ss;
+    ss << directory << "./saved_pcd" << "pointcloud_" << timestamp << "_frame_" << std::setw(5) << std::setfill('0') << msg->seq << ".pcd";
+    std::string filename = ss.str();
+    pcl::PointCloud<pcl::PointXYZI> cloud;
+
+    for (const auto& point : msg->points)
+    {
+        pcl::PointXYZI p;
+        p.x = point.x;
+        p.y = point.y;
+        p.z = point.z;
+        p.intensity = point.intensity;
+        cloud.push_back(p);
+    }
+
+    if (pcl::io::savePCDFileBinary(filename, cloud) == -1)
+    {
+        RS_ERROR << "Failed to save PCD file " << filename << RS_REND;
+    }
+    else
+    {
+        RS_MSG << "Saved point cloud to " << filename << RS_REND;
+    }
+}
+*/
+
+
+
     //静态函数
     static std::shared_ptr<PointCloudMsg> driverGetPointCloudFromCallerCallback(void)
     {
@@ -345,7 +387,7 @@ int main(int argc, char* argv[]){
     for (int i = 0; i < 20; i++) {
 
         //10s倒计时用以调整
-        for (int j = 10; j > 0; j--) {
+        for (int j = 1; j > 0; j--) {
             std::this_thread::sleep_for(std::chrono::seconds(1)); //睡1s
             std::cout << "请调整标定板位置" << j << "秒后会进行雷达帧和照片帧的采集" << std::endl;
         }
