@@ -357,9 +357,13 @@ int main(int argc, char* argv[]){
             cam1.saveImage(cam1.sharedframe);
         }
     }
+    
 
     
-    std::cout << "已完成20组IMG/PCD采集" << std::endl;
+    std::cout << "已完成20组IMG/PCD采集(可使用手动退出)" << std::endl;
+
+    image_handle_thread.join();
+    cloud_handle_thread.join();
 
     return 0;
 }
