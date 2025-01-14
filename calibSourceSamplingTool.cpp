@@ -29,9 +29,7 @@ public:
 
     //构造/析构方法
     LidarService() = default;
-    ~LidarService() = default;
     
-
     //共享变量
     std::shared_ptr<PointCloudMsg> sharedmsg;
 
@@ -51,15 +49,6 @@ public:
 
             //写到共享变量sharedmsg
             sharedmsg = msg;
-
-            #if 0
-            for (auto it = msg->points.begin(); it != msg->points.end(); it++)
-            {
-                std::cout << std::fixed << std::setprecision(3)
-                    << "(" << it->x << ", " << it->y << ", " << it->z << ", " << (int)it->intensity << ")"
-                    << std::endl;
-            }
-            #endif
 
             free_cloud_queue.push(msg);
         
@@ -350,15 +339,8 @@ int main(int argc, char* argv[]){
         cam1.processImage(*cam1.sharedCap, cam1.sharedframe);
         });
 
+    
 
-#ifdef ORDERLY_EXIT
-    std::this_thread::sleep_for(std::chrono::seconds(10));
-
-    driver.stop();
-
-    to_exit_process = true;
-    cloud_handle_thread.join();
-#else
     
     for (int i = 0; i < 20; i++) {
 
@@ -376,7 +358,8 @@ int main(int argc, char* argv[]){
         }
     }
 
-#endif
+    
+    std::cout << "已完成20组IMG/PCD采集" << std::endl;
 
     return 0;
 }
