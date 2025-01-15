@@ -11,7 +11,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
-#include <direct.h> 
+#include <direct.h>
 
 //共享指针初始化
 //相机ID 宽 高
@@ -44,10 +44,14 @@ public:
     LidarService() = default;
     
     //共享变量
-    std::shared_ptr<PointCloudMsg> sharedmsg;
+    std::shared_ptr< pcl::PointCloud<pcl::PointXYZI>::Ptr> sharedpclCloud;
 
     //一般函数
     void processCloud(){
+
+        // 创建 PCL 点云对象
+        pcl::PointCloud<pcl::PointXYZI>::Ptr pclCloud(new pcl::PointCloud<pcl::PointXYZI>());
+
         bool to_exit_process = false;
         while (!to_exit_process)
         {
@@ -57,41 +61,39 @@ public:
                 continue;
             }
 
-            // Well, it is time to process the point cloud msg, even it is time-consuming.
-            //RS_MSG << "msg: " << msg->seq << " point cloud size: " << msg->points.size() << RS_REND;
+            pclCloud->width = msg->width;
+            pclCloud->height = msg->height;
+            pclCloud->is_dense = msg->is_dense;
+            pclCloud->points.resize(msg->points.size());
+
+            // 填充点云数据
+            for (size_t i = 0; i < msg->points.size(); ++i) {
+                pcl::PointXYZI p;
+                p.x = msg->points[i].x;
+                p.y = msg->points[i].y;
+                p.z = msg->points[i].z;
+                p.intensity = msg->points[i].intensity; // 保留强度信息
+                pclCloud->points[i] = p;
+            }
+
 
             //写到共享变量sharedmsg
-            sharedmsg = msg;
+            sharedpclCloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>::Ptr>(pclCloud);
 
             free_cloud_queue.push(msg);
         
         }
     }
 
-    void savePCD(std::shared_ptr<PointCloudMsg> rawPcd) {
-        if (!rawPcd) {
+    void savePCD(std::shared_ptr<pcl::PointCloud<pcl::PointXYZI>::Ptr> sharedpclCloud) {
+        if (!sharedpclCloud) {
 
             std::cout << "PCD为空帧！" << std::endl;
 
             throw std::invalid_argument("rawPCD为空帧！");
         }
 
-        // 创建 PCL 点云对象
-        pcl::PointCloud<pcl::PointXYZI>::Ptr pclCloud(new pcl::PointCloud<pcl::PointXYZI>());
-        pclCloud->width = rawPcd->width;
-        pclCloud->height = rawPcd->height;
-        pclCloud->is_dense = rawPcd->is_dense;
-        pclCloud->points.resize(rawPcd->points.size());
-
-        // 填充点云数据
-        for (size_t i = 0; i < rawPcd->points.size(); ++i) {
-            pcl::PointXYZI p;
-            p.x = rawPcd->points[i].x;
-            p.y = rawPcd->points[i].y;
-            p.z = rawPcd->points[i].z;
-            p.intensity = rawPcd->points[i].intensity; // 保留强度信息
-            pclCloud->points[i] = p;
-        }
+        
 
         // 获取保存路径和文件名
         std::string pcdFolder = getPCDFolderPath(); // 假设实现了这个函数
@@ -101,7 +103,7 @@ public:
         std::string filePath = pcdFolder + "\\" + getNextPCDFileName() + ".pcd";
 
         // 保存点云到 PCD 文件
-        if (pcl::io::savePCDFileBinary(filePath, *pclCloud) < 0) {
+        if (pcl::io::savePCDFileBinary(filePath, **sharedpclCloud) < 0) {
             throw std::runtime_error("保存PCD文件失败!");
         }
 
@@ -515,7 +517,7 @@ int main(int argc, char* argv[]) {
         // 采集数据帧
         {
             std::lock_guard<std::mutex> lock(mtx); // 加锁以保护共享资源
-            rslidar.savePCD(rslidar.sharedmsg); ///< 保存雷达点云数据
+            rslidar.savePCD(rslidar.sharedpclCloud); ///< 保存雷达点云数据
             cam1.saveImage(cam1.sharedframe);   ///< 保存相机图像数据
         }
     }
