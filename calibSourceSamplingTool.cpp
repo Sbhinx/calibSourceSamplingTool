@@ -266,9 +266,13 @@ public:
 
             // 更新共享帧数据
             shareframe = std::make_shared<cv::Mat>(frame);
+            cv::Mat shrink;
+            cv::Size dsize = cv::Size(int(width / 4), int(height / 4));
+            shrink.create(dsize, frame.type());
+            cv::resize(frame, shrink, dsize, 0, 0, cv::INTER_AREA);
 
             // 显示图像
-            cv::imshow("Camera", frame);
+            cv::imshow("Camera", shrink);
 
             // 按下 'q' 键退出循环
             if (cv::waitKey(1) == 'q') {
@@ -418,7 +422,10 @@ public:
                     }
 
                     sampleInterval = std::stoi(argv[5]);
+                    g_sampleInterval = std::make_shared<int>(sampleInterval);
+
                     sampleCount = std::stoi(argv[6]);
+                    g_sampleCount = std::make_shared<int>(sampleCount);
 
                     if (sampleInterval <= 0 || sampleCount <= 0) {
                         std::cerr << "错误：采样间隔和采样次数必须为正整数！\n";
@@ -450,8 +457,6 @@ public:
 
 int main(int argc, char* argv[]) {
 
-
-
         // 调用静态类的方法处理参数
     if (ProgramHelper::handleArguments(argc, argv)== 1) {
         return 1;
@@ -459,9 +464,6 @@ int main(int argc, char* argv[]) {
 
     //声明锁
     std::mutex mtx;
-
-
-
 
     //实例化LidarService、cam
     LidarService rslidar;
@@ -518,7 +520,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    std::cout << "已完成 20 组图像/点云数据采集（可手动退出程序）" << std::endl;
+    std::cout << "已完成 "<< *g_sampleCount<<"组图像/点云数据采集（可手动退出程序）" << std::endl;
 
     // 等待线程结束
     image_handle_thread.join();
