@@ -14,9 +14,17 @@
 #include <direct.h> 
 
 //共享指针初始化
-std::shared_ptr<int> g_camID;
-std::shared_ptr<int> g_height;
-std::shared_ptr<int> g_width;
+//相机ID 宽 高
+std::shared_ptr<int> g_camID = NULL;
+std::shared_ptr<int> g_height = NULL;
+std::shared_ptr<int> g_width = NULL;
+
+int DEFAULT_INTERVAL = 10;
+int DEFAULT_COUNT = 20;
+//采样次数和间隔
+std::shared_ptr<int> g_sampleInterval = std::make_shared<int>(DEFAULT_INTERVAL);
+std::shared_ptr<int> g_sampleCount = std::make_shared<int>(DEFAULT_COUNT);
+
 
 
 
@@ -62,6 +70,9 @@ public:
 
     void savePCD(std::shared_ptr<PointCloudMsg> rawPcd) {
         if (!rawPcd) {
+
+            std::cout << "PCD为空帧！" << std::endl;
+
             throw std::invalid_argument("rawPCD为空帧！");
         }
 
@@ -333,6 +344,7 @@ private:
 };
 
 
+
 class ProgramHelper {
 public:
     // 显示用法信息
@@ -342,6 +354,7 @@ public:
             << "  <摄像头ID> <宽度> <高度>   正常运行程序，指定摄像头ID和分辨率。\n"
             << "  -v                         显示程序版本信息。\n"
             << "  -help                      显示此帮助信息。\n"
+            << "  -t <采样间隔> <采样次数>   指定采样间隔和采样次数。\n"
             << std::endl;
     }
 
@@ -353,10 +366,12 @@ public:
             << std::endl;
     }
 
-    // 参数检查和处理
     static int handleArguments(int argc, char* argv[]) {
         const std::string programName = argv[0];
+        int sampleInterval = 0;  // 采样间隔
+        int sampleCount = 0;     // 采样次数
 
+        // 处理 -v 或 -help 参数
         if (argc == 2) {
             std::string option = argv[1];
             if (option == "-v") {
@@ -373,9 +388,10 @@ public:
                 return 1;
             }
         }
-        else if (argc == 4) {
+        // 处理摄像头ID、宽度和高度参数
+        else if (argc >= 4) {
             try {
-                // 读取参数
+                // 解析摄像头ID、宽度和高度
                 int camID = std::stoi(argv[1]);
                 g_camID = std::make_shared<int>(camID);
 
@@ -390,6 +406,30 @@ public:
                     << "  摄像头ID：" << camID << "\n"
                     << "  分辨率：" << width << "x" << height << "\n"
                     << "程序启动中..." << std::endl;
+
+                // 检查是否存在 -t 参数
+                if (argc >= 5 && std::string(argv[4]) == "-t") {
+                    // 解析采样间隔和采样次数
+
+                    if (argc < 7) {
+                        std::cerr << "错误：-t 参数后面需要跟采样间隔和采样次数！\n";
+                        std::cerr << "提示：使用 -help 查看用法。" << std::endl;
+                        return 1;
+                    }
+
+                    sampleInterval = std::stoi(argv[5]);
+                    sampleCount = std::stoi(argv[6]);
+
+                    if (sampleInterval <= 0 || sampleCount <= 0) {
+                        std::cerr << "错误：采样间隔和采样次数必须为正整数！\n";
+                        std::cerr << "提示：使用 -help 查看用法。" << std::endl;
+                        return 1;
+                    }
+
+                    std::cout << "采样间隔: " << sampleInterval << " 秒\n";
+                    std::cout << "采样次数: " << sampleCount << " 次\n";
+                }
+
                 return 0;
             }
             catch (const std::exception& e) {
@@ -404,22 +444,23 @@ public:
             return 1;
         }
     }
+
+
 };
 
+int main(int argc, char* argv[]) {
 
 
 
-int main(int argc, char* argv[]){
+        // 调用静态类的方法处理参数
+    if (ProgramHelper::handleArguments(argc, argv)== 1) {
+        return 1;
+        }
 
-    
-    
-    // 调用静态类的方法处理参数
-    ProgramHelper::handleArguments(argc, argv);
-    
     //声明锁
     std::mutex mtx;
 
-    
+
 
 
     //实例化LidarService、cam
@@ -439,12 +480,12 @@ int main(int argc, char* argv[]){
 
     robosense::lidar::LidarDriver<PointCloudMsg> driver;               ///< 声明雷达驱动对象
     driver.regPointCloudCallback(LidarService::driverGetPointCloudFromCallerCallback,
-        LidarService::driverReturnPointCloudToCallerCallback); ///< 注册点云回调函数
+    LidarService::driverReturnPointCloudToCallerCallback); ///< 注册点云回调函数
     driver.regExceptionCallback(LidarService::exceptionCallback);  ///< 注册异常回调函数
-    if (!driver.init(param))                         ///< 调用初始化函数
-    {
-        RS_ERROR << "驱动初始化失败..." << RS_REND;
-        return -1;
+    
+    if (!driver.init(param)){                         ///< 调用初始化函数
+            RS_ERROR << "驱动初始化失败..." << RS_REND;
+            return -1;
     }
     // 启动点云处理线程
     std::thread cloud_handle_thread = std::thread(&LidarService::processCloud, &rslidar);
@@ -458,12 +499,13 @@ int main(int argc, char* argv[]){
     // std::thread image_handle_thread = std::thread(&CameraService::processImage, &cam1, cam1.sharedCap);
     std::thread image_handle_thread = std::thread([&cam1]() {
         cam1.processImage(*cam1.sharedCap, cam1.sharedframe); ///< 调用相机图像处理函数
-        });
+            });
 
     // 数据采集循环
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < *g_sampleCount; i++) {
         // 10 秒倒计时用于调整标定板位置
-        for (int j = 10; j > 0; j--) {
+            
+        for (int j = *g_sampleInterval; j > 0; j--) {
             std::this_thread::sleep_for(std::chrono::seconds(1)); // 休眠 1 秒
             std::cout << "请调整标定板位置，" << j << " 秒后将进行雷达帧和照片帧采集" << std::endl;
         }
@@ -484,5 +526,3 @@ int main(int argc, char* argv[]){
 
     return 0;
 }
-
-
