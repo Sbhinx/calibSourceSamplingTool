@@ -71,7 +71,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\CODE_ENV;D:\CODE_ENV\PCL 1.14.1\include\pcl-1.14;D:\CODE_ENV\PCL 1.14.1\3rdParty\Boost\include\boost-1_84;D:\CODE_ENV\PCL 1.14.1\3rdParty\Eigen3\include\eigen3;D:\CODE_ENV\PCL 1.14.1\3rdParty\FLANN\include;D:\CODE_ENV\PCL 1.14.1\3rdParty\Qhull\include;D:\CODE_ENV\PCL 1.14.1\3rdParty\VTK\include;D:\CODE_ENV\WpdPack\Include;D:\CODE_ENV\opencv\build\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\CODE_ENV;D:\CODE_ENV\PCL 1.14.1\include\pcl-1.14;D:\CODE_ENV\PCL 1.14.1\3rdParty\Boost\include\boost-1_84;D:\CODE_ENV\PCL 1.14.1\3rdParty\Eigen3\include\eigen3;D:\CODE_ENV\PCL 1.14.1\3rdParty\FLANN\include;D:\CODE_ENV\PCL 1.14.1\3rdParty\Qhull\include;D:\CODE_ENV\PCL 1.14.1\3rdParty\VTK\include\vtk-9.3;D:\CODE_ENV\WpdPack\Include;D:\CODE_ENV\opencv\build\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\CODE_ENV\PCL 1.14.1\lib;D:\CODE_ENV\PCL 1.14.1\3rdParty\Boost\lib;D:\CODE_ENV\PCL 1.14.1\3rdParty\FLANN\lib;D:\CODE_ENV\PCL 1.14.1\3rdParty\Qhull\lib;D:\CODE_ENV\PCL 1.14.1\3rdParty\VTK\lib;D:\CODE_ENV\WpdPack\Lib\x64;D:\CODE_ENV\opencv\build\x64\vc16\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

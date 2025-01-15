@@ -12,6 +12,13 @@
 #include <sstream>
 #include <iomanip>
 #include <direct.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/visualization/cloud_viewer.h>
+#include <pcl/io/pcd_io.h>
+#include <vtkRenderWindow.h>
+
+
 
 //共享指针初始化
 //相机ID 宽 高
@@ -49,8 +56,13 @@ public:
     //一般函数
     void processCloud(){
 
+
+
+
         // 创建 PCL 点云对象
         pcl::PointCloud<pcl::PointXYZI>::Ptr pclCloud(new pcl::PointCloud<pcl::PointXYZI>());
+        
+        pcl::visualization::CloudViewer viewer("Lidar");
 
         bool to_exit_process = false;
         while (!to_exit_process)
@@ -77,8 +89,14 @@ public:
             }
 
 
+
+
             //写到共享变量sharedmsg
             sharedpclCloud = std::make_shared<pcl::PointCloud<pcl::PointXYZI>::Ptr>(pclCloud);
+
+            // 创建可视化器并显示点云
+            
+            viewer.showCloud(pclCloud);
 
             free_cloud_queue.push(msg);
         
@@ -269,7 +287,7 @@ public:
             // 更新共享帧数据
             shareframe = std::make_shared<cv::Mat>(frame);
             cv::Mat shrink;
-            cv::Size dsize = cv::Size(int(width / 4), int(height / 4));
+            cv::Size dsize = cv::Size(int(width / 2), int(height / 2));
             shrink.create(dsize, frame.type());
             cv::resize(frame, shrink, dsize, 0, 0, cv::INTER_AREA);
 
