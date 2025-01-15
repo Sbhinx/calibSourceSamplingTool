@@ -387,7 +387,7 @@ int main(int argc, char* argv[]){
     for (int i = 0; i < 20; i++) {
 
         //10s倒计时用以调整
-        for (int j = 1; j > 0; j--) {
+        for (int j = 10; j > 0; j--) {
             std::this_thread::sleep_for(std::chrono::seconds(1)); //睡1s
             std::cout << "请调整标定板位置" << j << "秒后会进行雷达帧和照片帧的采集" << std::endl;
         }
@@ -399,8 +399,6 @@ int main(int argc, char* argv[]){
             cam1.saveImage(cam1.sharedframe);
         }
     }
-    
-
     
     std::cout << "已完成20组IMG/PCD采集(可使用手动退出)" << std::endl;
 
