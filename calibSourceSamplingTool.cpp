@@ -225,7 +225,7 @@ void savePointCloudToPCD(const std::shared_ptr<PointCloudMsg>& msg)
     static std::string getNextPCDFileName() {
         static int pcd_counter = 0;  // 静态变量，保证跨调用记住上次的编号
         std::stringstream ss;
-        ss<< "pcd_" << std::setw(3) << std::setfill('0') << pcd_counter++;  // 格式化为三位数，填充0
+        ss << std::setw(3) << std::setfill('0') << pcd_counter++;  // 格式化为三位数，填充0
         return ss.str();
     }
 
@@ -360,7 +360,7 @@ public:
     static std::string getNextIMGFileName() {
         static int img_counter = 0;  // 静态变量，用于记录编号
         std::stringstream ss;
-        ss << "img_" << std::setw(3) << std::setfill('0') << img_counter++;  // 格式化为三位数，补零
+        ss << std::setw(3) << std::setfill('0') << img_counter++;  // 格式化为三位数，补零
         return ss.str();
     }
 
