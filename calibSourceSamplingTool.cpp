@@ -17,7 +17,27 @@
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/io/pcd_io.h>
 #include <vtkRenderWindow.h>
+#include <csignal>
 
+volatile sig_atomic_t exit_flag = 0; // 全局退出标志
+
+
+bool to_exit_process_c = false;
+bool to_exit_process_l = false;
+
+BOOL CtrlHandler(DWORD fdwCtrlType) {
+    if (fdwCtrlType == CTRL_C_EVENT) {
+        
+        to_exit_process_c = true;
+        to_exit_process_l = true;
+        
+        exit_flag = 1;
+
+
+        return TRUE;
+    }
+    return FALSE;
+}
 
 
 //共享指针初始化
@@ -35,6 +55,7 @@ std::shared_ptr<int> g_sampleCount = std::make_shared<int>(DEFAULT_COUNT);
 
 
 
+
 //#define ORDERLY_EXIT
 typedef PointXYZI PointT;
 typedef PointCloudT<PointT> PointCloudMsg;
@@ -46,6 +67,8 @@ robosense::lidar::SyncQueue<std::shared_ptr<PointCloudMsg>> stuffed_cloud_queue;
 class LidarService{
 
 public:
+
+    //static bool to_exit_process;
 
     //构造/析构方法
     LidarService() = default;
@@ -64,8 +87,8 @@ public:
         
         pcl::visualization::CloudViewer viewer("Lidar");
 
-        bool to_exit_process = false;
-        while (!to_exit_process)
+        to_exit_process_l = false;
+        while (!to_exit_process_l)
         {
             std::shared_ptr<PointCloudMsg> msg = stuffed_cloud_queue.popWait();
             if (msg.get() == NULL)
@@ -233,11 +256,13 @@ void savePointCloudToPCD(const std::shared_ptr<PointCloudMsg>& msg)
     
     
 private:
-    bool to_exit_process = false;
+    
 };
 
 class CameraService {
 public:
+    //static bool to_exit_process_c;
+
     std::shared_ptr<cv::Mat> sharedframe; ///< 共享指针，用于存储当前帧图像数据
     std::shared_ptr<cv::VideoCapture> sharedCap; ///< 共享指针，用于摄像头捕获对象
 
@@ -272,7 +297,8 @@ public:
         // 创建一个窗口用于显示摄像头画面
         cv::namedWindow("Camera", cv::WINDOW_AUTOSIZE);
 
-        while (true) {
+        to_exit_process_c = false;
+        while (!to_exit_process_c) {
             cv::Mat frame;
 
             // 从摄像头读取一帧图像
@@ -477,10 +503,11 @@ public:
 
 int main(int argc, char* argv[]) {
 
+
         // 调用静态类的方法处理参数
     if (ProgramHelper::handleArguments(argc, argv)== 1) {
         return 1;
-        }
+    }
 
     //声明锁
     std::mutex mtx;
@@ -542,9 +569,24 @@ int main(int argc, char* argv[]) {
 
     std::cout << "已完成 "<< *g_sampleCount<<"组图像/点云数据采集（可手动退出程序）" << std::endl;
 
+
+    //注册信号处理函数
+    SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
+
+    while (!exit_flag) {
+
+
+        Sleep(1000);
+
+    }
+
+    
+
+
     // 等待线程结束
     image_handle_thread.join();
     cloud_handle_thread.join();
+
 
     return 0;
 }
