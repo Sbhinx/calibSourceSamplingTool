@@ -504,7 +504,7 @@ public:
 int main(int argc, char* argv[]) {
 
 
-        // 调用静态类的方法处理参数
+    // 调用静态类的方法处理参数
     if (ProgramHelper::handleArguments(argc, argv)== 1) {
         return 1;
     }
