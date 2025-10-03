@@ -304,6 +304,8 @@ public:
             // 从摄像头读取一帧图像
             cap >> frame;
 
+			frame = cropImageCenter(frame, width, height);
+
             // 检查图像是否为空
             if (frame.empty()) {
                 std::cerr << "错误: 接收到空帧！" << std::endl;
@@ -333,6 +335,38 @@ public:
         cv::destroyAllWindows();
     }
 
+
+    cv::Mat cropImageCenter(const cv::Mat& src, int crop_width, int crop_height){
+
+        /**
+          * @brief 从输入图片中心裁切指定分辨率的图片
+          * @param src 原始图片
+          * @param crop_width 裁切目标宽度
+          * @param crop_height 裁切目标高度
+          * @return 裁切后的图片
+        */
+
+
+        // 原始分辨率
+        int src_width = src.cols;
+        int src_height = src.rows;
+
+        // 如果目标分辨率大于等于原始分辨率，直接返回原图
+        if (crop_width >= src_width && crop_height >= src_height)
+            return src.clone();
+
+        // 计算裁切区域左上角坐标，使裁切框居中
+        int x = std::max(0, (src_width - crop_width) / 2);
+        int y = std::max(0, (src_height - crop_height) / 2);
+
+        // 限制裁切宽高不越界
+        int w = std::min(crop_width, src_width - x);
+        int h = std::min(crop_height, src_height - y);
+
+        cv::Rect roi(x, y, w, h);
+        return src(roi).clone();
+    }
+
     bool initCamera() {
         // 打开摄像头并启动图像处理线程
         cv::VideoCapture cap(cameraID);
@@ -344,8 +378,8 @@ public:
         }
 
         // 设置分辨率
-        cap.set(cv::CAP_PROP_FRAME_WIDTH, width);   // 设置宽度
-        cap.set(cv::CAP_PROP_FRAME_HEIGHT, height); // 设置高度
+        cap.set(cv::CAP_PROP_FRAME_WIDTH, 9999);   // 设置宽度
+        cap.set(cv::CAP_PROP_FRAME_HEIGHT, 9999); // 设置高度
 
         // 获取实际分辨率并输出
         int actualWidth = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
@@ -555,8 +589,11 @@ int main(int argc, char* argv[]) {
         // 10 秒倒计时用于调整标定板位置
             
         for (int j = *g_sampleInterval; j > 0; j--) {
+
             std::this_thread::sleep_for(std::chrono::seconds(1)); // 休眠 1 秒
             std::cout << "请调整标定板位置，" << j << " 秒后将进行雷达帧和照片帧采集" << std::endl;
+
+
         }
 
         // 采集数据帧
